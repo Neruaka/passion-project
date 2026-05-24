@@ -1,0 +1,24 @@
+{
+  "common": {
+    "save": "Sauvegarder",
+    "cancel": "Annuler",
+    "loading": "Chargement...",
+    "syncNow": "Synchroniser"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "training": "Entraînement",
+    "nutrition": "Nutrition",
+    "coach": "Coach",
+    "health": "Santé",
+    "chat": "Chat",
+    "system": "Système"
+  },
+  "agentStatus": {
+    "idle": "En veille",
+    "thinking": "Réflexion",
+    "executing": "Exécution",
+    "error": "Erreur",
+    "sleeping": "Sommeil"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "passion-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "next": "^16.2.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "next-intl": "^4.12.0",
+    "lucide-react": "^0.468.0",
+    "recharts": "^2.15.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.6.0"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.0",
+    "@types/react": "^19.2.0",
+    "@types/node": "^22.10.0",
+    "tailwindcss": "^4.3.0",
+    "@tailwindcss/postcss": "^4.3.0",
+    "postcss": "^8.4.49",
+    "eslint": "^10.4.0",
+    "eslint-config-next": "^16.2.0",
+    "prettier": "^3.4.2",
+    "vitest": "^4.1.0",
+    "@testing-library/react": "^16.1.0"
+  }
+}

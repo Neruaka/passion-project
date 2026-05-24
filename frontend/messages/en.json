@@ -1,0 +1,24 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "syncNow": "Sync now"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "training": "Training",
+    "nutrition": "Nutrition",
+    "coach": "Coach",
+    "health": "Health",
+    "chat": "Chat",
+    "system": "System"
+  },
+  "agentStatus": {
+    "idle": "Idle",
+    "thinking": "Thinking",
+    "executing": "Executing",
+    "error": "Error",
+    "sleeping": "Sleeping"
+  }
+}

@@ -1,0 +1,8 @@
+/* Tailwind 4 — CSS-first config (no tailwind.config.ts needed by default).
+   Theme tokens are defined here with @theme. Dark mode is the default
+   (NFR-UX-001, cyberpunk PASSION vibes). */
+@import "tailwindcss";
+
+@theme {
+  /* TODO(sprint-1): define design tokens (colors, radii, fonts) here */
+}

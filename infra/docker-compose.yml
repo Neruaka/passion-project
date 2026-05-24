@@ -1,0 +1,107 @@
+# PASSION — Docker Compose (development).
+# 10 containers across 5 zones (see C4 Level 2). Production overrides live in
+# docker-compose.prod.yml. All services bind to the internal network; only Caddy
+# is exposed, and in production it binds to the Tailscale interface only (ADR-004).
+
+name: passion
+
+services:
+  # --- ZONE INGRESS ---
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on: [frontend, backend]
+
+  frontend:
+    build: ../frontend
+    restart: unless-stopped
+    env_file: ../frontend/.env
+    expose: ["3000"]
+
+  # --- ZONE APP ---
+  backend:
+    build: ../backend
+    restart: unless-stopped
+    env_file: ../backend/.env
+    expose: ["8000"]
+    depends_on: [postgres, redis]
+
+  celery-worker:
+    build: ../backend
+    restart: unless-stopped
+    command: celery -A src.celery_app worker --loglevel=info --concurrency=4
+    env_file: ../backend/.env
+    depends_on: [postgres, redis]
+
+  celery-beat:
+    build: ../backend
+    restart: unless-stopped
+    command: celery -A src.celery_app beat --loglevel=info
+    env_file: ../backend/.env
+    depends_on: [postgres, redis]
+
+  # --- ZONE MCP ---
+  hevy-mcp:
+    image: node:22-alpine
+    restart: unless-stopped
+    # TODO: replace with the hevy-mcp image/command (ADR-002)
+    command: ["sh", "-c", "echo 'hevy-mcp placeholder' && sleep infinity"]
+    env_file: ../backend/.env
+
+  cronometer-mcp:
+    image: node:22-alpine
+    restart: unless-stopped
+    # TODO: replace with the cronometer-mcp image/command (ADR-002)
+    command: ["sh", "-c", "echo 'cronometer-mcp placeholder' && sleep infinity"]
+    env_file: ../backend/.env
+
+  # --- ZONE STORAGE ---
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: passion
+      POSTGRES_PASSWORD: passion
+      POSTGRES_DB: passion
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    expose: ["5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U passion"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    expose: ["6379"]
+
+  # --- ZONE OBSERVABILITY ---
+  grafana-lgtm:
+    image: grafana/otel-lgtm:latest  # Loki + Grafana + Tempo + Mimir in one
+    restart: unless-stopped
+    expose: ["3000", "4317", "4318"]
+    volumes:
+      - grafana_data:/data
+      - ./grafana/provisioning:/otel-lgtm/grafana/conf/provisioning:ro
+
+  promtail:
+    image: grafana/promtail:latest
+    restart: unless-stopped
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on: [grafana-lgtm]
+
+volumes:
+  pg_data:
+  caddy_data:
+  grafana_data:

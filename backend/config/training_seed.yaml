@@ -1,0 +1,48 @@
+# Training program seed (PPL+Upper+Street). Loaded once at bootstrap to populate
+# training_context, program_split, and exercise_targets. See SPECIFICATIONS.md.
+
+training_context:
+  phase: cutting
+  phase_started_at: 2026-04-01
+  current_weight_kg: 95
+  daily_kcal_target: 1650
+  daily_protein_g_target_min: 180
+  daily_protein_g_target_max: 200
+  daily_hydration_l_target: 4
+  sleep_target_hours_min: 7
+  sleep_target_hours_max: 9
+  bedtime_target: "23:00"
+  wakeup_target: "07:00"
+  daily_steps_target: 8000
+  weekly_long_walks_target: 2
+  weekly_session_target: 5
+  active_split: "PPL+Upper+Street"
+  supplements:
+    - {name: Creatine, dose: 5g, timing: anytime, frequency: daily}
+    - {name: Whey, dose: 30g, timing: post-workout, frequency: training_days}
+    - {name: Collagen, dose: 10g, timing: morning, frequency: daily}
+    - {name: Omega-3, dose: 2g EPA+DHA, timing: with_meal, frequency: daily}
+    - {name: Magnesium bisglycinate, dose: 300mg, timing: evening, frequency: daily}
+    - {name: Vitamin D3, dose: 4000 IU, timing: morning, frequency: daily}
+    - {name: Bioculture, dose: 1 capsule, timing: morning, frequency: daily}
+    - {name: Multivitamin, dose: 1 tablet, timing: morning, frequency: daily}
+
+program_split:
+  split_name: "PPL+Upper+Street"
+  monday: push
+  tuesday: pull
+  wednesday: rest
+  thursday: legs
+  friday: upper
+  saturday: street
+  sunday: rest
+
+# Exercise targets — abbreviated sample (full list populated at bootstrap).
+exercise_targets:
+  - {title: "Bench Press (Barbell)", day: push, type: compound_free,
+     baseline_weight_kg: 52.5, baseline_reps: 7, target_weight_kg_min: 65, target_weight_kg_max: 70, target_reps: 8}
+  - {title: "Squat (Barbell)", day: legs, type: compound_free,
+     baseline_weight_kg: 65, baseline_reps: 7, target_weight_kg_min: 85, target_reps: 8}
+  - {title: "Rack Pull", day: pull, type: compound_free,
+     baseline_weight_kg: 90, baseline_reps: 6, target_weight_kg_min: 120, target_reps: 6}
+  # ... full program loaded from SPECIFICATIONS.md section 15 at bootstrap.

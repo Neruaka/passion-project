@@ -1,29 +1,33 @@
-# Environment
+# Environment / secrets
 .env
 .env.local
 *.env
+!.env.example
 
 # Python
 __pycache__/
 *.pyc
 .venv/
+venv/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+htmlcov/
 
 # Node
 node_modules/
 .next/
+out/
+*.tsbuildinfo
+next-env.d.ts
 
-# OS
+# OS / IDE
 .DS_Store
 Thumbs.db
-
-# IDE
 .vscode/
 .idea/
 
-# Logs & databases
+# Logs & data
 *.log
-*.db
 backups/

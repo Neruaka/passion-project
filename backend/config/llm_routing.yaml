@@ -1,0 +1,33 @@
+# LLM routing configuration (ADR-002, NFR-COST-004).
+# Hot-swappable without redeploy. Maps task types to complexity tiers.
+
+tiers:
+  simple:   # ~60% of calls, free
+    provider: gemini
+    model: gemini-2.5-flash
+  medium:   # ~30% of calls
+    provider: anthropic
+    model: claude-haiku-4-5
+  complex:  # ~10% of calls
+    provider: anthropic
+    model: claude-sonnet-4-5
+
+# Map each task to a tier.
+task_routing:
+  classify_message: simple
+  extract_tags: simple
+  parse_json: simple
+  summarize_short: simple
+  workout_suggestion: medium
+  nutrition_plan: medium
+  plateau_analysis: medium
+  coach_chat: complex
+  brain_planning: complex
+  agent_debug: complex
+
+# Tasks that must NEVER use the Gemini free tier (privacy, NFR-PRIV-002).
+# These are forced to Anthropic regardless of tier.
+sensitive_tasks:
+  - blood_panel_analysis
+  - journal_analysis
+  - cgm_analysis
