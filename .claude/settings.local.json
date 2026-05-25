@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import bcrypt; print\\(bcrypt.hashpw\\(b'changeme', bcrypt.gensalt\\(12\\)\\).decode\\(\\)\\)\")",
+      "Bash(python3 -c \"import bcrypt; print\\(bcrypt.hashpw\\(b'changeme', bcrypt.gensalt\\(12\\)\\).decode\\(\\)\\)\")",
+      "Bash(docker run *)",
+      "Bash(docker compose *)",
+      "Bash(curl -s -u admin:admin http://localhost:3001/api/datasources)",
+      "Bash(python -c \"import sys,json; [print\\(f\\\\\"name={d['name']} type={d['type']} uid={d['uid']}\\\\\"\\) for d in json.load\\(sys.stdin\\)]\")",
+      "Bash(ruff check *)",
+      "Bash(ruff format *)",
+      "Bash(mypy src *)",
+      "Bash(pytest -q)"
+    ]
+  }
+}

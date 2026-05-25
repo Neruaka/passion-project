@@ -36,9 +36,7 @@ class Mission(Base):
     completed_at: Mapped[datetime | None] = tstz()
     created_at: Mapped[datetime] = created_at_col()
 
-    __table_args__ = (
-        Index("idx_missions_date", for_date.desc(), "status"),
-    )
+    __table_args__ = (Index("idx_missions_date", for_date.desc(), "status"),)
 
 
 class XPLog(Base):
@@ -51,9 +49,7 @@ class XPLog(Base):
     notes: Mapped[str | None] = mapped_column(Text)
     earned_at: Mapped[datetime] = created_at_col()
 
-    __table_args__ = (
-        Index("idx_xp_log_earned", earned_at.desc()),
-    )
+    __table_args__ = (Index("idx_xp_log_earned", earned_at.desc()),)
 
 
 class UserLevel(Base):
@@ -72,9 +68,13 @@ class Streak(Base):
     __tablename__ = "streaks"
 
     id: Mapped[uuid.UUID] = uuid_pk()
-    streak_type: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)  # workout|nutrition|sleep
+    streak_type: Mapped[str] = mapped_column(
+        String(20), unique=True, nullable=False
+    )  # workout|nutrition|sleep
     current_value: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     best_value: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     frozen_until: Mapped[date | None] = mapped_column(Date)
-    freezes_used_this_month: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    freezes_used_this_month: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
     last_calculated_at: Mapped[datetime] = created_at_col()

@@ -7,32 +7,6 @@ SQLAlchemy resolves these at mapper-configuration time regardless of order.
 
 from __future__ import annotations
 
-from .base import Base
-
-# Group 1 — Auth & System
-from .system import (
-    AgentAction,
-    AuthAttempt,
-    LLMConfig,
-    NotificationConfig,
-)
-
-# Group 2 — Workouts & Exercises
-from .workouts import (
-    ExerciseTemplate,
-    SyncState,
-    Workout,
-    WorkoutExercise,
-    WorkoutSet,
-)
-
-# Group 3 — Targets & Context
-from .targets import (
-    ExerciseTarget,
-    ProgramSplit,
-    TrainingContext,
-)
-
 # Group 4 — Analysis
 from .analysis import (
     ExerciseAnalysis,
@@ -40,11 +14,13 @@ from .analysis import (
     PersonalRecord,
     WeeklyStats,
 )
+from .base import Base
 
-# Group 5 — Health
-from .health import (
-    HealthMarker,
-    HealthMetric,
+# Group 8 — Memory & Chat
+from .chat import (
+    AgentMemory,
+    Conversation,
+    Message,
 )
 
 # Group 6 — Coaching
@@ -62,49 +38,64 @@ from .gamification import (
     XPLog,
 )
 
-# Group 8 — Memory & Chat
-from .chat import (
-    AgentMemory,
-    Conversation,
-    Message,
+# Group 5 — Health
+from .health import (
+    HealthMarker,
+    HealthMetric,
+)
+
+# Group 1 — Auth & System
+from .system import (
+    AgentAction,
+    AuthAttempt,
+    LLMConfig,
+    NotificationConfig,
+)
+
+# Group 3 — Targets & Context
+from .targets import (
+    ExerciseTarget,
+    ProgramSplit,
+    TrainingContext,
+)
+
+# Group 2 — Workouts & Exercises
+from .workouts import (
+    ExerciseTemplate,
+    SyncState,
+    Workout,
+    WorkoutExercise,
+    WorkoutSet,
 )
 
 __all__ = [
-    "Base",
-    # Group 1
-    "LLMConfig",
-    "NotificationConfig",
-    "AuthAttempt",
     "AgentAction",
-    # Group 2
+    "AgentMemory",
+    "AuthAttempt",
+    "Base",
+    "Challenge",
+    "Conversation",
+    "ExerciseAnalysis",
+    "ExerciseTarget",
     "ExerciseTemplate",
+    "HealthMarker",
+    "HealthMetric",
+    "LLMConfig",
+    "Message",
+    "Mission",
+    "MonthlyStats",
+    "NotificationConfig",
+    "NutritionPlan",
+    "PersonalRecord",
+    "ProgramSplit",
+    "Streak",
+    "SyncState",
+    "TrainingContext",
+    "UserLevel",
+    "WeeklyStats",
     "Workout",
     "WorkoutExercise",
     "WorkoutSet",
-    "SyncState",
-    # Group 3
-    "TrainingContext",
-    "ExerciseTarget",
-    "ProgramSplit",
-    # Group 4
-    "PersonalRecord",
-    "ExerciseAnalysis",
-    "WeeklyStats",
-    "MonthlyStats",
-    # Group 5
-    "HealthMetric",
-    "HealthMarker",
-    # Group 6
     "WorkoutSuggestion",
-    "NutritionPlan",
-    "Challenge",
-    # Group 7
-    "Mission",
     "XPLog",
-    "UserLevel",
-    "Streak",
-    # Group 8
-    "AgentMemory",
-    "Conversation",
-    "Message",
 ]

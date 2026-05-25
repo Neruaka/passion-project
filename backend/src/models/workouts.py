@@ -9,8 +9,8 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
-    DateTime,
     ARRAY,
+    DateTime,
     ForeignKey,
     Index,
     Integer,
@@ -18,10 +18,8 @@ from sqlalchemy import (
     SmallInteger,
     String,
     Text,
-    UniqueConstraint,
-    func,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, created_at_col, tstz, updated_at_col, uuid_pk
@@ -84,9 +82,7 @@ class WorkoutExercise(Base):
         back_populates="exercise", cascade="all, delete-orphan"
     )
 
-    __table_args__ = (
-        Index("idx_workout_exercises_workout", "workout_id", "order_index"),
-    )
+    __table_args__ = (Index("idx_workout_exercises_workout", "workout_id", "order_index"),)
 
 
 class WorkoutSet(Base):
@@ -106,16 +102,16 @@ class WorkoutSet(Base):
 
     exercise: Mapped[WorkoutExercise] = relationship(back_populates="sets")
 
-    __table_args__ = (
-        Index("idx_workout_sets_exercise", "workout_exercise_id", "order_index"),
-    )
+    __table_args__ = (Index("idx_workout_sets_exercise", "workout_exercise_id", "order_index"),)
 
 
 class SyncState(Base):
     __tablename__ = "sync_state"
 
     id: Mapped[int] = mapped_column(SmallInteger, primary_key=True, autoincrement=True)
-    service: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)  # hevy|cronometer|health
+    service: Mapped[str] = mapped_column(
+        String(50), unique=True, nullable=False
+    )  # hevy|cronometer|health
     last_successful_sync: Mapped[datetime | None] = tstz()
     bootstrap_completed: Mapped[bool] = mapped_column(nullable=False, server_default="false")
     last_error: Mapped[str | None] = mapped_column(Text)

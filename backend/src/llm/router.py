@@ -6,12 +6,12 @@ the budget (NFR-COST-002), applies guardrails, and tracks cost/tokens.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class TaskComplexity(str, Enum):
-    SIMPLE = "simple"    # -> Gemini Flash (free)
-    MEDIUM = "medium"    # -> Claude Haiku
+class TaskComplexity(StrEnum):
+    SIMPLE = "simple"  # -> Gemini Flash (free)
+    MEDIUM = "medium"  # -> Claude Haiku
     COMPLEX = "complex"  # -> Claude Sonnet
 
 

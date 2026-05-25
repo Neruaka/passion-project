@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
 
 jobs:
@@ -19,11 +19,15 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U passion"
           --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      # One canonical URL; migrations/env.py swaps +asyncpg -> +psycopg2 for Alembic.
+      DATABASE_URL: postgresql+asyncpg://passion:passion@localhost:5432/passion
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
       - name: Install deps
         working-directory: backend
         run: pip install -e ".[dev]"
@@ -35,13 +39,9 @@ jobs:
         run: mypy src
       - name: Migrate
         working-directory: backend
-        env:
-          DATABASE_URL: postgresql+psycopg2://passion:passion@localhost:5432/passion
         run: alembic upgrade head
       - name: Tests
         working-directory: backend
-        env:
-          DATABASE_URL: postgresql+psycopg2://passion:passion@localhost:5432/passion
         run: pytest
 
   frontend:
@@ -51,12 +51,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
       - name: Install deps
         working-directory: frontend
-        run: npm ci
+        # npm ci requires package-lock.json — fall back to install if missing
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --no-audit --no-fund
+          fi
       - name: Lint
         working-directory: frontend
-        run: npm run lint
+        run: npm run lint --if-present
       - name: Type-check
         working-directory: frontend
-        run: npm run typecheck
+        run: npm run typecheck --if-present

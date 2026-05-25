@@ -13,7 +13,9 @@ def estimate_one_rep_max(weight_kg: float, reps: int) -> float:
     return weight_kg * (1 + reps / 30)
 
 
-def detect_prs(sets: list[dict], history: dict) -> list[dict]:
+def detect_prs(
+    sets: list[dict[str, object]], history: dict[str, object]
+) -> list[dict[str, object]]:
     """Detect all PRs in a set of logged sets against historical bests.
 
     TODO(sprint-3): implement the 4 PR types with warmup/failure filtering.

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from src.services.fitness.pr_detection import estimate_one_rep_max
 
 

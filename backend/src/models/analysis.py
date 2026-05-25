@@ -9,14 +9,13 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import (
-    DateTime,
     Date,
+    DateTime,
     ForeignKey,
     Index,
     Integer,
     Numeric,
     String,
-    Text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -84,7 +83,9 @@ class WeeklyStats(Base):
     week_start: Mapped[date] = mapped_column(Date, unique=True, nullable=False)
     total_sessions: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     total_duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
-    total_volume_kg: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, server_default="0")
+    total_volume_kg: Mapped[float] = mapped_column(
+        Numeric(12, 2), nullable=False, server_default="0"
+    )
     volume_per_muscle_group: Mapped[dict | None] = mapped_column(JSONB)
     pr_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     created_at: Mapped[datetime] = created_at_col()
@@ -97,7 +98,9 @@ class MonthlyStats(Base):
     month_start: Mapped[date] = mapped_column(Date, unique=True, nullable=False)
     total_sessions: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     total_duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
-    total_volume_kg: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, server_default="0")
+    total_volume_kg: Mapped[float] = mapped_column(
+        Numeric(12, 2), nullable=False, server_default="0"
+    )
     volume_per_muscle_group: Mapped[dict | None] = mapped_column(JSONB)
     pr_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     created_at: Mapped[datetime] = created_at_col()

@@ -8,29 +8,14 @@ Alembic autogenerate to discover every table.
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, time
+from datetime import datetime
 
-from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
-    ARRAY,
-    BigInteger,
-    Boolean,
-    CheckConstraint,
-    Date,
     DateTime,
-    ForeignKey,
-    Index,
-    Integer,
-    Numeric,
-    SmallInteger,
-    String,
-    Text,
-    Time,
-    UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import INET, JSONB, UUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):

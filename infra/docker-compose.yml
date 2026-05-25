@@ -1,7 +1,14 @@
 # PASSION — Docker Compose (development).
 # 10 containers across 5 zones (see C4 Level 2). Production overrides live in
-# docker-compose.prod.yml. All services bind to the internal network; only Caddy
-# is exposed, and in production it binds to the Tailscale interface only (ADR-004).
+# docker-compose.prod.yml. In dev, services bind host ports for direct iteration;
+# in production, Caddy is the only ingress and binds to the Tailscale interface
+# only (ADR-004).
+#
+# Profiles:
+#   default       → 10 containers (caddy, frontend, backend, celery x2, mcp x2,
+#                   postgres, redis, grafana-lgtm). Use on Windows/Mac for dev.
+#   linux-host    → adds promtail (needs /var/run/docker.sock — Linux host only).
+#                   Run: docker compose --profile linux-host up
 
 name: passion
 
@@ -16,35 +23,59 @@ services:
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
-    depends_on: [frontend, backend]
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
 
   frontend:
     build: ../frontend
     restart: unless-stopped
     env_file: ../frontend/.env
-    expose: ["3000"]
+    ports:
+      - "3000:3000"
 
   # --- ZONE APP ---
   backend:
     build: ../backend
     restart: unless-stopped
     env_file: ../backend/.env
-    expose: ["8000"]
-    depends_on: [postgres, redis]
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health',timeout=3).status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   celery-worker:
     build: ../backend
     restart: unless-stopped
     command: celery -A src.celery_app worker --loglevel=info --concurrency=4
     env_file: ../backend/.env
-    depends_on: [postgres, redis]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   celery-beat:
     build: ../backend
     restart: unless-stopped
     command: celery -A src.celery_app beat --loglevel=info
     env_file: ../backend/.env
-    depends_on: [postgres, redis]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   # --- ZONE MCP ---
   hevy-mcp:
@@ -71,7 +102,8 @@ services:
       POSTGRES_DB: passion
     volumes:
       - pg_data:/var/lib/postgresql/data
-    expose: ["5432"]
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U passion"]
       interval: 10s
@@ -81,23 +113,41 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    expose: ["6379"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   # --- ZONE OBSERVABILITY ---
   grafana-lgtm:
     image: grafana/otel-lgtm:latest  # Loki + Grafana + Tempo + Mimir in one
     restart: unless-stopped
-    expose: ["3000", "4317", "4318"]
+    ports:
+      - "3001:3000"   # Grafana UI
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
     volumes:
       - grafana_data:/data
-      - ./grafana/provisioning:/otel-lgtm/grafana/conf/provisioning:ro
+      # Per-file mounts to avoid masking the otel-lgtm baseline provisioning
+      # (mounting the whole provisioning/ dir hides files Grafana needs to start).
+      - ./grafana/provisioning/datasources/datasources.yml:/otel-lgtm/grafana/conf/provisioning/datasources/passion.yml:ro
+      - ./grafana/provisioning/dashboards/dashboards.yml:/otel-lgtm/grafana/conf/provisioning/dashboards/passion.yml:ro
+      - ./grafana/dashboards/passion-api.json:/otel-lgtm/grafana/dashboards/passion-api.json:ro
+    # No healthcheck: the otel-lgtm image ships without curl/wget. Grafana is
+    # exposed on :3001 — `curl http://localhost:3001/api/health` from the host
+    # is the canonical liveness check.
 
   promtail:
     image: grafana/promtail:latest
     restart: unless-stopped
+    profiles: ["linux-host"]
     volumes:
       - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     command: -config.file=/etc/promtail/config.yml
     depends_on: [grafana-lgtm]
 

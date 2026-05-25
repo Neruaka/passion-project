@@ -1,0 +1,13 @@
+apiVersion: 1
+
+providers:
+  - name: "PASSION"
+    orgId: 1
+    folder: "PASSION"
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /otel-lgtm/grafana/dashboards
+      foldersFromFilesStructure: false

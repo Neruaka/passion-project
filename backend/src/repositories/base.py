@@ -6,12 +6,8 @@ See C4 L3 (Repository Layer) and the architecture rationale on testability.
 
 from __future__ import annotations
 
-from typing import Generic, TypeVar
 
-T = TypeVar("T")
-
-
-class BaseRepository(Generic[T]):
+class BaseRepository[T]:
     """Common CRUD operations over an AsyncSession.
 
     TODO(sprint-1): implement get, list, add, update, delete with an injected

@@ -43,9 +43,7 @@ class WorkoutSuggestion(Base):
     tokens_used: Mapped[int | None] = mapped_column(Integer)
     cost_eur: Mapped[float | None] = mapped_column(Numeric(8, 5))
 
-    __table_args__ = (
-        Index("idx_workout_suggestions_date", for_date.desc()),
-    )
+    __table_args__ = (Index("idx_workout_suggestions_date", for_date.desc()),)
 
 
 class NutritionPlan(Base):
@@ -65,9 +63,7 @@ class NutritionPlan(Base):
     is_training_day: Mapped[bool] = mapped_column(nullable=False)
     notes: Mapped[str | None] = mapped_column(Text)
 
-    __table_args__ = (
-        Index("idx_nutrition_plans_date", for_date.desc()),
-    )
+    __table_args__ = (Index("idx_nutrition_plans_date", for_date.desc()),)
 
 
 class Challenge(Base):
@@ -87,6 +83,4 @@ class Challenge(Base):
     progress: Mapped[dict | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = created_at_col()
 
-    __table_args__ = (
-        Index("idx_challenges_week", week_start.desc(), "status"),
-    )
+    __table_args__ = (Index("idx_challenges_week", week_start.desc(), "status"),)

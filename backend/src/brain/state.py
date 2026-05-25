@@ -12,8 +12,8 @@ from typing import TypedDict
 class BrainState(TypedDict, total=False):
     """Shared state carried across the brain cycle nodes."""
 
-    trigger: str            # 'scheduler' | 'event'
-    context: dict           # gathered world state (THINK)
-    plan: list[dict]        # prioritized actions (PLAN)
-    executed_action: dict   # the single action run this cycle (EXECUTE)
-    reflection: str         # learnings to store in memory (REFLECT)
+    trigger: str  # 'scheduler' | 'event'
+    context: dict  # gathered world state (THINK)
+    plan: list[dict]  # prioritized actions (PLAN)
+    executed_action: dict  # the single action run this cycle (EXECUTE)
+    reflection: str  # learnings to store in memory (REFLECT)

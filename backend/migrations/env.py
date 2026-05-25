@@ -5,6 +5,10 @@ metadata of all ORM models so that future `alembic revision --autogenerate`
 can detect drift. Note: the *initial* migration is hand-written because it
 contains native partitioning, HNSW/BRIN indexes, and a materialized view —
 none of which autogenerate can express.
+
+Runtime uses `postgresql+asyncpg://...` (async driver), but Alembic itself is
+synchronous — we transparently swap `+asyncpg` for `+psycopg2` here so one
+DATABASE_URL works for both.
 """
 
 from __future__ import annotations
@@ -16,17 +20,23 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 # Import all models so Base.metadata is fully populated.
-from models import Base  # noqa: E402
+from models import Base
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Inject DB URL from environment.
+
+def _to_sync_url(url: str) -> str:
+    """Convert an async driver URL to its sync equivalent for Alembic."""
+    return url.replace("postgresql+asyncpg://", "postgresql+psycopg2://", 1)
+
+
+# Inject DB URL from environment (transparently sync-ified).
 database_url = os.environ.get("DATABASE_URL")
 if database_url:
-    config.set_main_option("sqlalchemy.url", database_url)
+    config.set_main_option("sqlalchemy.url", _to_sync_url(database_url))
 
 target_metadata = Base.metadata
 

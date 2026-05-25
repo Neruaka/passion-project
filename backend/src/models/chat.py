@@ -52,7 +52,9 @@ class Conversation(Base):
     __tablename__ = "conversations"
 
     id: Mapped[uuid.UUID] = uuid_pk()
-    conversation_type: Mapped[str] = mapped_column(String(20), nullable=False)  # direct_line|coach_fitness
+    conversation_type: Mapped[str] = mapped_column(
+        String(20), nullable=False
+    )  # direct_line|coach_fitness
     started_at: Mapped[datetime] = created_at_col()
     last_message_at: Mapped[datetime | None] = tstz()
 
@@ -60,9 +62,7 @@ class Conversation(Base):
         back_populates="conversation", cascade="all, delete-orphan"
     )
 
-    __table_args__ = (
-        Index("idx_conversations_last_msg", last_message_at.desc()),
-    )
+    __table_args__ = (Index("idx_conversations_last_msg", last_message_at.desc()),)
 
 
 class Message(Base):
@@ -79,6 +79,4 @@ class Message(Base):
 
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
 
-    __table_args__ = (
-        Index("idx_messages_conversation", "conversation_id", "created_at"),
-    )
+    __table_args__ = (Index("idx_messages_conversation", "conversation_id", "created_at"),)

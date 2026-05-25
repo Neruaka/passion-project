@@ -74,9 +74,7 @@ class AuthAttempt(Base):
     success: Mapped[bool] = mapped_column(nullable=False)
     attempted_at: Mapped[datetime] = created_at_col()
 
-    __table_args__ = (
-        Index("idx_auth_attempts_ip_time", "ip_address", attempted_at.desc()),
-    )
+    __table_args__ = (Index("idx_auth_attempts_ip_time", "ip_address", attempted_at.desc()),)
 
 
 class AgentAction(Base):

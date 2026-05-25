@@ -15,8 +15,8 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import (
-    DateTime,
     Date,
+    DateTime,
     Index,
     Integer,
     Numeric,
@@ -37,20 +37,28 @@ class HealthMetric(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
     )
-    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True, nullable=False)
+    recorded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), primary_key=True, nullable=False
+    )
     duration_seconds: Mapped[int | None] = mapped_column(Integer)
     metric_type: Mapped[str] = mapped_column(String(50), nullable=False)
     numeric_value: Mapped[float | None] = mapped_column(Numeric(12, 4))
     unit: Mapped[str | None] = mapped_column(String(20))
-    source: Mapped[str] = mapped_column(String(30), nullable=False)  # health_connect|manual|lab|dexcom
+    source: Mapped[str] = mapped_column(
+        String(30), nullable=False
+    )  # health_connect|manual|lab|dexcom
     source_device: Mapped[str | None] = mapped_column(String(50))
     source_app: Mapped[str | None] = mapped_column(String(50))
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB)  # 'metadata' is reserved in SA
+    metadata_: Mapped[dict | None] = mapped_column(
+        "metadata", JSONB
+    )  # 'metadata' is reserved in SA
     source_record_id: Mapped[str | None] = mapped_column(String(200))
     ingested_at: Mapped[datetime] = created_at_col()
 
     __table_args__ = (
-        UniqueConstraint("source", "source_record_id", "recorded_at", name="uq_health_source_record"),
+        UniqueConstraint(
+            "source", "source_record_id", "recorded_at", name="uq_health_source_record"
+        ),
         Index("idx_health_metrics_type_time", "metric_type", recorded_at.desc()),
         Index("idx_health_metrics_recorded_brin", "recorded_at", postgresql_using="brin"),
         Index("idx_health_metrics_metadata", "metadata", postgresql_using="gin"),
@@ -72,6 +80,4 @@ class HealthMarker(Base):
     attachment_path: Mapped[str | None] = mapped_column(String(500))
     created_at: Mapped[datetime] = created_at_col()
 
-    __table_args__ = (
-        Index("idx_health_markers_date", measurement_date.desc()),
-    )
+    __table_args__ = (Index("idx_health_markers_date", measurement_date.desc()),)
