@@ -22,6 +22,8 @@ jobs:
     env:
       # One canonical URL; migrations/env.py swaps +asyncpg -> +psycopg2 for Alembic.
       DATABASE_URL: postgresql+asyncpg://passion:passion@localhost:5432/passion
+      # testcontainers in CI: Ryuk (the reaper container) often flakes on GH runners.
+      TESTCONTAINERS_RYUK_DISABLED: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -37,10 +39,10 @@ jobs:
       - name: Type-check
         working-directory: backend
         run: mypy src
-      - name: Migrate
+      - name: Migrate (smoke test on the service postgres)
         working-directory: backend
         run: alembic upgrade head
-      - name: Tests
+      - name: Tests (unit + integration via testcontainers)
         working-directory: backend
         run: pytest
 
@@ -55,7 +57,6 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install deps
         working-directory: frontend
-        # npm ci requires package-lock.json — fall back to install if missing
         run: |
           if [ -f package-lock.json ]; then
             npm ci

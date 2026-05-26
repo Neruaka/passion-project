@@ -10,6 +10,7 @@ src/api/router.py
 src/api/middleware/__init__.py
 src/api/v1/__init__.py
 src/api/v1/auth.py
+src/api/v1/workouts.py
 src/brain/__init__.py
 src/brain/graph.py
 src/brain/state.py
@@ -26,10 +27,12 @@ src/db/base.py
 src/db/session.py
 src/integrations/__init__.py
 src/integrations/external/__init__.py
+src/integrations/external/ntfy.py
 src/integrations/mcp/__init__.py
 src/integrations/mcp/hevy.py
 src/jobs/__init__.py
 src/jobs/schedule.py
+src/jobs/tasks.py
 src/llm/__init__.py
 src/llm/budget.py
 src/llm/router.py
@@ -54,10 +57,13 @@ src/passion_backend.egg-info/requires.txt
 src/passion_backend.egg-info/top_level.txt
 src/repositories/__init__.py
 src/repositories/base.py
+src/repositories/workouts.py
 src/schemas/__init__.py
 src/schemas/auth.py
+src/schemas/workouts.py
 src/scripts/__init__.py
 src/scripts/hash_password.py
 src/services/__init__.py
 src/services/fitness/__init__.py
 src/services/fitness/pr_detection.py
+src/services/fitness/sync.py

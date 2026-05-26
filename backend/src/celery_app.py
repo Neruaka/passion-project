@@ -21,12 +21,6 @@ app = Celery(
     backend=settings.redis_url,
 )
 
-# TODO(sprint-1+): autodiscover tasks in src.jobs, load beat schedule from
-# src.jobs.schedule (cf. ROADMAP s1).
-# app.autodiscover_tasks(["src.jobs"])
-# from src.jobs.schedule import beat_schedule
-# app.conf.beat_schedule = beat_schedule
-
 app.conf.update(
     timezone="UTC",
     enable_utc=True,
@@ -34,3 +28,14 @@ app.conf.update(
     accept_content=["json"],
     result_serializer="json",
 )
+
+# Tasks live in src.jobs.tasks; the import below triggers @app.task
+# registration. Beat schedule is loaded from src.jobs.schedule.
+# autodiscover_tasks is also wired so future task modules under src.jobs.* are
+# picked up without editing this file.
+app.autodiscover_tasks(["src.jobs"], force=True)
+
+from src.jobs import tasks as _tasks  # noqa: E402, F401  — ensures @app.task runs
+from src.jobs.schedule import beat_schedule  # noqa: E402
+
+app.conf.beat_schedule = beat_schedule

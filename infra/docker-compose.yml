@@ -5,8 +5,11 @@
 # only (ADR-004).
 #
 # Profiles:
-#   default       → 10 containers (caddy, frontend, backend, celery x2, mcp x2,
-#                   postgres, redis, grafana-lgtm). Use on Windows/Mac for dev.
+#   default       → 9 containers (caddy, frontend, backend, celery x2,
+#                   postgres, redis, grafana-lgtm + (sprint 1) ntfy=disabled).
+#                   MCP servers (hevy-mcp, cronometer-mcp) are NOT separate
+#                   containers — they are spawned as stdio subprocesses from
+#                   the backend container per ADR-002 + Sprint 1 design note.
 #   linux-host    → adds promtail (needs /var/run/docker.sock — Linux host only).
 #                   Run: docker compose --profile linux-host up
 
@@ -78,19 +81,12 @@ services:
         condition: service_healthy
 
   # --- ZONE MCP ---
-  hevy-mcp:
-    image: node:22-alpine
-    restart: unless-stopped
-    # TODO: replace with the hevy-mcp image/command (ADR-002)
-    command: ["sh", "-c", "echo 'hevy-mcp placeholder' && sleep infinity"]
-    env_file: ../backend/.env
-
-  cronometer-mcp:
-    image: node:22-alpine
-    restart: unless-stopped
-    # TODO: replace with the cronometer-mcp image/command (ADR-002)
-    command: ["sh", "-c", "echo 'cronometer-mcp placeholder' && sleep infinity"]
-    env_file: ../backend/.env
+  # Note: hevy-mcp and cronometer-mcp are NOT separate containers in dev.
+  # The backend container has nodejs installed and spawns them as stdio
+  # subprocesses on demand (mcp SDK + StdioServerParameters). See
+  # src/integrations/mcp/hevy.py. If we later need an always-on MCP server
+  # reachable by other clients (e.g. Claude Desktop via Tailscale), we'll
+  # add HTTP/SSE-transport variants here.
 
   # --- ZONE STORAGE ---
   postgres:

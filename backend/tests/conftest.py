@@ -1,16 +1,22 @@
 """Shared pytest fixtures.
 
-Sprint 0 tests are lightweight: we set the env required by Settings and build
-the app *without* the lifespan (no DB / Redis needed for auth + security tests).
-Future integration tests will use testcontainers per NFR-TEST-004.
+Two layers:
+  * Unit tests (no DB / Redis): set env required by Settings, build the FastAPI
+    app *without* lifespan.
+  * Integration tests: spin up an ephemeral Postgres+pgvector via testcontainers
+    (NFR-TEST-004), run Alembic, yield AsyncSession per test.
 """
 
 from __future__ import annotations
 
 import os
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
+from pathlib import Path
 
 import pytest
+import pytest_asyncio
+
+_BACKEND_ROOT = Path(__file__).resolve().parent.parent
 
 # Bcrypt hash of "changeme" — keeps tests deterministic without depending on
 # bcrypt at collection time.
@@ -61,11 +67,102 @@ def test_client():
     return TestClient(app)
 
 
-@pytest.fixture(scope="session")
-def postgres_container():
-    """Spin up a throwaway Postgres+pgvector container for integration tests.
+def _to_async_dsn(url: str) -> str:
+    """Normalise any postgresql DSN to asyncpg."""
+    for prefix in ("postgresql+psycopg2://", "postgresql+psycopg://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+asyncpg://" + url[len(prefix) :]
+    return url
 
-    TODO(sprint-1): use testcontainers PostgresContainer with the pgvector
-    image, run migrations, yield the connection URL.
+
+def _to_sync_dsn(url: str) -> str:
+    """Normalise any postgresql DSN to psycopg2 (for Alembic)."""
+    for prefix in ("postgresql+asyncpg://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg2://" + url[len(prefix) :]
+    return url
+
+
+@pytest.fixture(scope="session")
+def postgres_url() -> Iterator[str]:
+    """Throwaway pgvector/postgres + Alembic upgrade head. Yields asyncpg DSN."""
+    from alembic import command
+    from alembic.config import Config
+    from testcontainers.postgres import PostgresContainer
+
+    container = PostgresContainer(
+        image="pgvector/pgvector:pg16",
+        username="passion",
+        password="passion",
+        dbname="passion",
+        driver=None,
+    )
+    container.start()
+    try:
+        raw_url = container.get_connection_url()
+        sync_url = _to_sync_dsn(raw_url)
+        alembic_cfg = Config(str(_BACKEND_ROOT / "alembic.ini"))
+        alembic_cfg.set_main_option("script_location", str(_BACKEND_ROOT / "migrations"))
+        prev = os.environ.get("DATABASE_URL")
+        os.environ["DATABASE_URL"] = sync_url
+        try:
+            command.upgrade(alembic_cfg, "head")
+        finally:
+            if prev is None:
+                os.environ.pop("DATABASE_URL", None)
+            else:
+                os.environ["DATABASE_URL"] = prev
+
+        yield _to_async_dsn(raw_url)
+    finally:
+        container.stop()
+
+
+_TRUNCATE_TABLES = [
+    "workouts",
+    "exercise_templates",
+    "sync_state",
+    "auth_attempts",
+    "personal_records",
+    "exercise_analysis",
+    "weekly_stats",
+    "monthly_stats",
+    "agent_memory",
+    "conversations",
+    "messages",
+    "workout_suggestions",
+    "nutrition_plans",
+    "challenges",
+    "missions",
+    "xp_log",
+    "user_level",
+    "streaks",
+    "health_markers",
+    "exercise_targets",
+    "training_context",
+    "program_split",
+]
+
+
+@pytest_asyncio.fixture()
+async def db_session(postgres_url: str) -> AsyncIterator[object]:
+    """Per-test AsyncSession; TRUNCATEs application tables at teardown.
+
+    Each test starts with a clean slate. Reference / singleton rows (llm_config,
+    notification_config) are intentionally NOT truncated; they're idempotent
+    and shared across tests.
     """
-    pytest.skip("Implement in sprint 1 (NFR-TEST-004)")
+    from sqlalchemy import text
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+    engine = create_async_engine(postgres_url, echo=False, pool_pre_ping=True)
+    sessionmaker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+    async with sessionmaker() as session:
+        try:
+            yield session
+        finally:
+            await session.rollback()
+    # Wipe between tests so commits in one test don't leak to the next.
+    async with engine.begin() as conn:
+        await conn.execute(text(f"TRUNCATE {', '.join(_TRUNCATE_TABLES)} RESTART IDENTITY CASCADE"))
+    await engine.dispose()
