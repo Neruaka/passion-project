@@ -39,13 +39,20 @@ def _duration_minutes(w: Workout) -> int:
 
 
 def _to_summary(w: Workout) -> WorkoutSummary:
+    # `exercises` is selectinload'd by WorkoutRepository.list_paginated, but
+    # use a defensive check so this works for both eager- and lazy-loaded
+    # callers without triggering a DetachedInstanceError.
+    try:
+        exercise_count = len(w.exercises)
+    except Exception:
+        exercise_count = 0
     return WorkoutSummary(
         id=w.id,
         hevy_id=w.hevy_id,
         title=w.title,
         start_time=w.start_time,
         duration_minutes=_duration_minutes(w),
-        exercise_count=len(w.exercises) if "exercises" in w.__dict__ else 0,
+        exercise_count=exercise_count,
         total_volume_kg=float(w.total_volume_kg) if w.total_volume_kg is not None else None,
         has_prs=False,  # PR detection arrives in sprint 2 (US-012)
     )

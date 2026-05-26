@@ -32,7 +32,9 @@ from src.repositories.workouts import (
 logger = structlog.get_logger(__name__)
 
 HEVY_SERVICE_NAME = "hevy"
-_DEFAULT_PAGE_SIZE = 50
+# chrisdoc/hevy-mcp caps `pageSize` at 10 (the underlying Hevy API has a hard
+# limit). We iterate more pages instead of one big batch.
+_DEFAULT_PAGE_SIZE = 10
 
 
 @dataclass(slots=True)
@@ -105,17 +107,41 @@ async def sync_hevy(
     log.info("hevy_sync_start")
 
     try:
-        # 1. Exercise templates first (FK target for workout_exercises).
-        templates = await client.list_exercise_templates()
-        stats.templates_synced = await template_repo.upsert_many(templates)
+        # 1. Exercise templates first (FK target for workout_exercises) — paginated.
+        known_template_ids: set[str] = set()
+        page = 1
+        while True:
+            templates, has_more = await client.list_exercise_templates(
+                page=page, page_size=page_size
+            )
+            stats.templates_synced += await template_repo.upsert_many(templates)
+            known_template_ids.update(str(t["hevy_id"]) for t in templates if t.get("hevy_id"))
+            if not has_more:
+                break
+            page += 1
+            if max_pages is not None and page > max_pages:
+                log.warning("hevy_sync_templates_max_pages_reached", max_pages=max_pages)
+                break
 
-        # 2. Paginated workouts.
+        # 2. Paginated workouts. If a workout references an unknown template,
+        # drop the FK (we keep the human-readable title) instead of failing the
+        # whole sync.
         page = 1
         while True:
             workouts, has_more = await client.list_workouts(page=page, page_size=page_size)
             stats.pages_fetched += 1
             for dto in workouts:
                 workout_kwargs, exercises_kwargs = _workout_to_orm_kwargs(dto)
+                for ex in exercises_kwargs:
+                    tmpl_id = ex.get("exercise_template_id")
+                    if tmpl_id and tmpl_id not in known_template_ids:
+                        log.warning(
+                            "hevy_unknown_template_fk_dropped",
+                            template_id=tmpl_id,
+                            workout=workout_kwargs["hevy_id"],
+                            exercise_title=ex.get("title"),
+                        )
+                        ex["exercise_template_id"] = None
                 result = await workout_repo.upsert_workout(
                     workout_data=workout_kwargs,
                     exercises_data=exercises_kwargs,

@@ -2,7 +2,7 @@
 
 > An autonomous AI agent running 24/7 on a self-hosted Linux server, designed as a comprehensive life-management system covering fitness, health, finance, career, journaling, and more.
 
-[![Status](https://img.shields.io/badge/status-requirements%20locked-blue)]()
+[![Status](https://img.shields.io/badge/sprint%200--1-done-brightgreen)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 [![Python](https://img.shields.io/badge/python-3.12+-blue)]()
 [![Next.js](https://img.shields.io/badge/next.js-15-black)]()
@@ -178,7 +178,7 @@ One-time costs: Hevy Pro Lifetime (~70€), Tasker + AutoHealth Connect (~7€).
 
 ## 🗺️ Project Status & Roadmap
 
-This project is in the **specifications phase** — extensive documentation has been produced before writing a single line of application code. This is intentional: specifications-first engineering reduces wasted work and produces a portfolio piece that demonstrates senior-level engineering discipline.
+The project moved from specifications-first to **active implementation** in May 2026. See [docs/ROADMAP.md](docs/ROADMAP.md) for the full sprint breakdown.
 
 ### Phase progress
 
@@ -187,12 +187,25 @@ This project is in the **specifications phase** — extensive documentation has 
 | **Phase 0 — Vision & Scope** | ✅ Complete | Vision, MVP scope, OUT-OF-SCOPE list |
 | **Phase 1 — User Stories** | ✅ Complete | 33 stories with Gherkin acceptance criteria |
 | **Phase 2 — Non-Functional Requirements** | ✅ Complete | 52 NFRs across 11 categories |
-| **Phase 3 — Architecture Decision Records** | 🟡 In progress | 4 ADRs locked, more coming |
-| **Phase 4 — Detailed Architecture** | 🔜 Next | C4 diagrams, API contracts, DB schemas |
-| **Phase 5 — Sprint Roadmap** | 🔜 Coming | Phase breakdown + estimated effort |
-| **Phase 6 — Implementation** | ⏳ Not started | The actual code |
+| **Phase 3 — Architecture Decision Records** | ✅ Complete | 4 ADRs locked |
+| **Phase 4 — Detailed Architecture** | ✅ Complete | C4 L1/L2/L3, 4 data flows, 41 API contracts, DB schema (28 tables) |
+| **Phase 5 — Sprint Roadmap** | ✅ Complete | 8 sprints planned over ~16-18 weeks |
+| **Phase 6 — Implementation** | 🟡 In progress | **Sprint 0 done · Sprint 1 done · Sprint 2 next** |
 
-Estimated time to MVP after Phase 5: **3-4 months** at 10-20h/week.
+### Implementation progress
+
+| Sprint | Status | What works today |
+|---|---|---|
+| **S0 — Walking skeleton** | ✅ Done | 10 containers up · bcrypt+JWT auth · `/health` · Grafana sees the API · CI green |
+| **S1 — Hevy ingestion** | ✅ Done | MCP-based sync (every 30 min via Celery Beat) · UPSERT idempotent · `GET /workouts`, `GET /workouts/{id}`, `POST /workouts/sync` · 80 real workouts + 434 templates synced from my own account |
+| **S2 — Analysis engine** | 🔜 Next | PR detection (Epley), plateaus, weekly/monthly stats, materialized views |
+| **S3 — LLM Router + Coaching** | ⏳ | 3-tier routing, budget cap, workout suggestions |
+| **S4 — Brain Orchestrator** | ⏳ | LangGraph autonomous loop, memory (RAG) |
+| **S5 — Dashboard UI** | ⏳ | Next.js dashboard, FR i18n, charts |
+| **S6 — Chat + Notifications** | ⏳ | WebSocket streaming, ntfy + Resend |
+| **S7 — Health/Nutrition + Hardening** | ⏳ | Tasker ingest, Cronometer sync, gamification, backups |
+
+Estimated time to MVP: **3-4 months** at 10-20h/week from here.
 
 ---
 

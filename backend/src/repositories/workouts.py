@@ -161,7 +161,12 @@ class WorkoutRepository(BaseRepository[Workout]):
             base = base.distinct()
 
         offset = (page - 1) * page_size
-        items_stmt = base.order_by(desc(Workout.start_time)).limit(page_size).offset(offset)
+        items_stmt = (
+            base.options(selectinload(Workout.exercises))
+            .order_by(desc(Workout.start_time))
+            .limit(page_size)
+            .offset(offset)
+        )
         items_result = await self.session.execute(items_stmt)
         items = items_result.scalars().unique().all()
 

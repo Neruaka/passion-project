@@ -52,49 +52,91 @@ gantt
 
 ## PHASE 0 — FOUNDATIONS
 
-### Sprint 0 — Walking Skeleton (~2 weeks)
+### Sprint 0 — Walking Skeleton ✅ DONE (May 2026)
 
 **Goal:** every container runs and the end-to-end plumbing is proven. Nothing
 useful yet, but the foundation is solid.
 
-**Deliverables**
-- `docker compose up` → all 10 containers healthy
-- PostgreSQL migrated (`alembic upgrade head`) — *already validated*
-- Tailscale configured; Caddy routes HTTPS to frontend/backend/grafana
-- FastAPI `/health` endpoint returns 200
-- Next.js renders a minimal dashboard shell (FR, dark mode)
-- **Auth working**: login → JWT → protected route → logout (US-001)
-- structlog + Prometheus + Grafana LGTM wired; the API "up" metric is visible
-- CI green: ruff + mypy + migrate + pytest all pass
-- Backup script runs once and a restore is tested (NFR-REL-003)
-- `.env` / secrets management in place
+**Delivered**
+- `docker compose up` → 8 containers default (caddy, frontend, backend, celery
+  worker+beat, postgres, redis, grafana-lgtm), 9 with `--profile linux-host`
+  (adds promtail). MCP servers spawned in-process per ADR-002 (not separate
+  containers — pragmatic decision, see [src/integrations/mcp/](../backend/src/integrations/mcp/))
+- PostgreSQL 16 + pgvector, full schema via `alembic upgrade head` (28 tables,
+  partitions, HNSW + BRIN indexes, matview)
+- FastAPI `/health` → 200 with DB+Redis ping; 503 if degraded
+- Frontend serves a placeholder page (real UI = Sprint 5)
+- **Auth working** (US-001): bcrypt cost 12 + HS256 JWT, `POST /auth/login`,
+  `GET /auth/me`, `POST /auth/system-unlock`. Default admin password "changeme"
+  with loud startup warning + `python -m src.scripts.hash_password` to rotate.
+- structlog (JSON, secret masking) + Prometheus `/metrics` (passion_api_up,
+  passion_http_requests_total) + OTel push to grafana-lgtm:4318 → Mimir/Tempo/Loki.
+  Grafana datasources + dashboard "PASSION — API overview" provisioned.
+- CI green: ruff + ruff format + mypy strict + alembic migrate + pytest (22 tests)
+- `.env` / secrets in place (gitignored)
+- Project root `compose.yaml` shim → `docker compose` works from any subdir
 
-**Covers:** US-001 · NFR-SEC-001/002/003, OBS-001/002/003, MAINT-006, REL-003
+**Covers:** US-001 · NFR-SEC-001/002/003, OBS-001/002/003, MAINT-006
 
-**Definition of done:** I log in via Tailscale, see an empty dashboard, and Grafana
-shows the API is alive. CI is green on `main`.
+**Deferred to later sprints (originally in S0 scope):**
+- Tailscale + Caddy HTTPS production hardening (S7)
+- Automated backups + restore drill (S7 — NFR-REL-003)
+- Frontend dashboard shell (S5)
 
 ---
 
 ## PHASE 1 — FITNESS DATA
 
-### Sprint 1 — Hevy Ingestion (~2 weeks)
+### Sprint 1 — Hevy Ingestion ✅ DONE (May 2026)
 
 **Goal:** real workout data flows from Hevy into the DB, autonomously.
 
-**Deliverables**
-- `hevy-mcp` container + `HevyClient` (MCP client)
-- `sync_hevy` Celery job (Flow 1): incremental, idempotent UPSERT, retry/backoff
-- Celery Beat schedule (every 30 min) + `sync_state` tracking
-- Bootstrap sync (full history on first run)
-- `WorkoutRepository`, `ExerciseRepository`, `WorkoutSetRepository`
-- API: `GET /workouts`, `GET /workouts/{id}`, `POST /workouts/sync`
-- BDD: `hevy_sync.feature` passes
+**Delivered**
+- `McpHevyClient` ([backend/src/integrations/mcp/hevy.py](../backend/src/integrations/mcp/hevy.py))
+  spawns `npx -y hevy-mcp` as a stdio subprocess inside the backend container
+  (nodejs added to image). Protocol-based design with a `FakeHevyClient` for
+  tests. Defensive decoder handles single block / multiple blocks / double-encoded
+  JSON / MCP error strings, and detects Hevy "Page not found" as clean
+  end-of-pagination.
+- `sync_hevy` orchestrator service ([backend/src/services/fitness/sync.py](../backend/src/services/fitness/sync.py)):
+  paginates exercise templates → upserts (FK target) → paginates workouts →
+  UPSERT idempotent by `hevy_id`. Gracefully drops FK to unknown templates
+  (keeps `title`). Marks `sync_state.last_successful_sync` only on success.
+- Celery task `sync_hevy_workouts` ([backend/src/jobs/tasks.py](../backend/src/jobs/tasks.py)):
+  autoretry 3× with exponential backoff (60s→900s, US-008 sc.4), `worker_redirect_stdouts=False`
+  so subprocess MCP can inherit FDs, ntfy alert on final retry failure.
+- Celery Beat schedule: every 30 min (US-008).
+- Repositories ([backend/src/repositories/workouts.py](../backend/src/repositories/workouts.py)):
+  `BaseRepository[T]` (PEP 695), `WorkoutRepository` (UPSERT + paginated list with
+  date/muscle_group/exercise filters, eager-loaded), `ExerciseTemplateRepository`
+  (bulk UPSERT via `INSERT … ON CONFLICT`), `SyncStateRepository`.
+- API ([backend/src/api/v1/workouts.py](../backend/src/api/v1/workouts.py)):
+  `GET /workouts` (paginated + filters), `GET /workouts/{id}` (detail, eager
+  exercises+sets), `POST /workouts/sync` (202 + job_id).
+- ntfy minimal client ([backend/src/integrations/external/ntfy.py](../backend/src/integrations/external/ntfy.py)).
+- Tests (33 total, +11 vs S0): unit (Hevy normalize × 4) · integration repos via
+  testcontainers Postgres+pgvector (4 tests) · acceptance for US-008 (3 scenarios
+  from `hevy_sync.feature`). CI updated with `TESTCONTAINERS_RYUK_DISABLED=true`.
+
+**Real-world validation (against my own Hevy Pro account):**
+- 1 manual `POST /workouts/sync` → **434 exercise templates** + **80 workouts**
+  imported in **~7.5 seconds** (9 pages of workouts × 10 + ~44 pages of templates × 10)
+- Re-sync = 0 new, 80 updated (UPSERT idempotent ✓)
+- All exercise sets (reps, RPE) preserved correctly
 
 **Covers:** US-008, US-008b(prep), US-009, US-010 · NFR-REL-002/004/005, PERF-002
 
-**Definition of done:** I log a workout in Hevy; within 30 min it appears in my
-dashboard's training log, with no duplicates on re-sync.
+**Deferred to Sprint 2:**
+- `total_volume_kg` computation (needs exercise type knowledge → analysis engine)
+- `WorkoutExercise.title` enrichment by joining `exercise_templates` in the
+  detail serialiser (currently null because Hevy MCP doesn't include it in
+  workout payload, only `exercise_template_id`)
+
+**Other Sprint 1 TODOs (sprint-2+):**
+- Rate-limit on `POST /workouts/sync` via Redis (US-009 sc.2, 30s/IP)
+- Pause Celery Beat + critical ntfy on 401 Hevy (US-008 sc.6 — currently retries normally)
+- Switch to `get-workout-events?since=` if hevy-mcp exposes it, for true
+  incremental (currently full re-sync each run, idempotent → cheap but wasteful)
 
 ### Sprint 2 — Analysis Engine (~2 weeks)
 
@@ -241,4 +283,4 @@ Each sprint follows the same rhythm:
 
 ---
 
-*Generated May 2026 — Frederick × Claude. Roadmap locked. Next stop: Sprint 0.*
+*Generated May 2026 — Frederick × Claude. Roadmap locked. Sprint 0 ✅ · Sprint 1 ✅ · Next stop: Sprint 2 (Analysis Engine).*

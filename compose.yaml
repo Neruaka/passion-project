@@ -1,0 +1,10 @@
+# Project-root shim so `docker compose up` works from anywhere in the repo.
+# The actual stack definition lives in infra/docker-compose.yml (kept there to
+# group all deployment artefacts under infra/). `name:` MUST match the included
+# file's name so we don't accidentally create a duplicate "passion-project"
+# stack alongside the "passion" one.
+
+name: passion
+
+include:
+  - path: infra/docker-compose.yml

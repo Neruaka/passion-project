@@ -27,6 +27,12 @@ app.conf.update(
     task_serializer="json",
     accept_content=["json"],
     result_serializer="json",
+    # By default Celery wraps sys.stdout/stderr in a LoggingProxy that has no
+    # .fileno(), which makes asyncio.create_subprocess_exec crash when a task
+    # spawns a child process (e.g. McpHevyClient -> npx hevy-mcp). Disable that
+    # redirection so child processes inherit the real file descriptors; our
+    # structlog logger keeps emitting JSON to stdout regardless.
+    worker_redirect_stdouts=False,
 )
 
 # Tasks live in src.jobs.tasks; the import below triggers @app.task
