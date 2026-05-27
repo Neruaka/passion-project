@@ -1,0 +1,14 @@
+[run]
+source = src/services/fitness
+
+[report]
+include =
+    */services/fitness/pr_detection.py
+    */services/fitness/plateau.py
+    */services/fitness/stats.py
+    */services/fitness/recovery.py
+    */services/fitness/targets.py
+fail_under = 90
+exclude_also =
+    raise NotImplementedError
+    if TYPE_CHECKING:

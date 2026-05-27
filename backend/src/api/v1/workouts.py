@@ -70,10 +70,16 @@ def _to_detail(w: Workout) -> WorkoutDetail:
         total_volume_kg=float(w.total_volume_kg) if w.total_volume_kg is not None else None,
         exercises=[
             ExerciseDetail(
-                title=ex.title,
+                # Fall back to template title/muscle groups when WorkoutExercise
+                # didn't carry them (template was synced separately from the workout).
+                title=ex.title or (ex.template.title if ex.template else None),
                 exercise_template_id=ex.exercise_template_id,
                 order_index=ex.order_index,
                 notes=ex.notes,
+                primary_muscle_group=(ex.template.primary_muscle_group if ex.template else None),
+                secondary_muscle_groups=(
+                    list(ex.template.secondary_muscle_groups or []) if ex.template else []
+                ),
                 sets=[
                     SetDetail(
                         order_index=s.order_index,
@@ -82,7 +88,7 @@ def _to_detail(w: Workout) -> WorkoutDetail:
                         reps=s.reps,
                         rpe=float(s.rpe) if s.rpe is not None else None,
                     )
-                    for s in ex.sets
+                    for s in sorted(ex.sets, key=lambda x: x.order_index)
                 ],
             )
             for ex in sorted(w.exercises, key=lambda e: e.order_index)

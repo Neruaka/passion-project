@@ -80,14 +80,32 @@ class WorkoutRepository(BaseRepository[Workout]):
         return result.scalar_one_or_none()
 
     async def get_detail(self, workout_id: UUID) -> Workout | None:
-        """Eager-load exercises and sets for the detail endpoint."""
+        """Eager-load exercises, sets, and the linked exercise_template."""
         stmt = (
             select(Workout)
             .where(Workout.id == workout_id)
-            .options(selectinload(Workout.exercises).selectinload(WorkoutExercise.sets))
+            .options(
+                selectinload(Workout.exercises).selectinload(WorkoutExercise.sets),
+                selectinload(Workout.exercises).selectinload(WorkoutExercise.template),
+            )
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+
+    @staticmethod
+    def _compute_total_volume_kg(exercises_data: list[dict[str, Any]]) -> float:
+        """Sum (weight_kg * reps) across working sets (skip warmup/failure)."""
+        total = 0.0
+        for ex in exercises_data:
+            for s in ex.get("sets") or []:
+                if s.get("set_type") in {"warmup", "failure"}:
+                    continue
+                weight = s.get("weight_kg")
+                reps = s.get("reps")
+                if weight is None or reps is None:
+                    continue
+                total += float(weight) * float(reps)
+        return round(total, 2)
 
     async def upsert_workout(
         self,
@@ -100,7 +118,11 @@ class WorkoutRepository(BaseRepository[Workout]):
         Strategy: delete-then-recreate via ORM. Cascade removes the old
         exercises/sets; a fresh tree is then inserted. Simpler than column-by-
         column diffing and fast enough for ~weekly workout volumes.
+
+        Side effect: pre-computes `total_volume_kg` from the working sets so
+        the read path doesn't have to (NFR-PERF-001).
         """
+        workout_data.setdefault("total_volume_kg", self._compute_total_volume_kg(exercises_data))
         existing = await self.get_by_hevy_id(workout_data["hevy_id"])
         was_new = existing is None
         if existing is not None:

@@ -8,6 +8,38 @@ import pytest
 from src.integrations.mcp.hevy import normalize_workout
 
 
+def test_normalize_real_hevy_payload():
+    """Real Hevy MCP shape: exercise uses `name`, set uses `weight`/`distance`/`duration`."""
+    raw = {
+        "id": "04a09f63",
+        "title": "Entraînement de nuit",
+        "startTime": "2026-05-26T16:34:40+00:00",
+        "endTime": "2026-05-26T20:53:25+00:00",
+        "exercises": [
+            {
+                "name": "Squat (Smith Machine)",
+                "index": 0,
+                "notes": "",
+                "exerciseTemplateId": "DDCC3821",
+                "sets": [
+                    {"index": 0, "type": "normal", "weight": 66.8, "reps": 6, "rpe": 8.5},
+                    {"index": 1, "type": "normal", "weight": 66.8, "reps": 6, "rpe": 8.5},
+                ],
+            }
+        ],
+    }
+    dto = normalize_workout(raw)
+    assert dto.hevy_id == "04a09f63"
+    assert len(dto.exercises) == 1
+    ex = dto.exercises[0]
+    assert ex.title == "Squat (Smith Machine)"
+    assert ex.exercise_template_id == "DDCC3821"
+    assert ex.sets[0]["weight_kg"] == 66.8
+    assert ex.sets[0]["reps"] == 6
+    assert ex.sets[0]["rpe"] == 8.5
+    assert ex.sets[0]["set_type"] == "normal"
+
+
 def test_normalize_minimal_workout():
     raw = {
         "id": "abc123",

@@ -138,25 +138,74 @@ useful yet, but the foundation is solid.
 - Switch to `get-workout-events?since=` if hevy-mcp exposes it, for true
   incremental (currently full re-sync each run, idempotent → cheap but wasteful)
 
-### Sprint 2 — Analysis Engine (~2 weeks)
+### Sprint 2 — Analysis Engine ✅ DONE (May 2026)
 
 **Goal:** the agent understands my training — PRs, plateaus, stats. Pure logic,
-high coverage (this is where TDD shines).
+high coverage (TDD).
 
-**Deliverables**
-- Fitness Service: `pr_detection` (4 types, Epley), `plateau_analysis`
-  (context-aware), `stats` (weekly/monthly), `recovery`, `targets`
-- Nightly analysis Celery job + materialized-view refresh job
-- `exercise_targets` seeded from `training_seed.yaml`
-- API: `GET /analysis/{prs,plateaus,targets,muscle-status,stats}`,
+**Delivered**
+- Pure fitness services (no I/O, all >93% unit-tested):
+  - [pr_detection.py](../backend/src/services/fitness/pr_detection.py) — 4 PR types
+    (`one_rep_max` Epley, `reps_at_load` bucketed by 5kg, `session_volume`,
+    `muscle_group_volume` weekly) — skips warmup/failure/dropset
+  - [plateau.py](../backend/src/services/fitness/plateau.py) — `plateau_official`,
+    `plateau_stalled`, `regression`, `behind_schedule` — **context-aware**
+    (thresholds widen during cutting, see `_PLATEAU_THRESHOLD_SESSIONS`)
+  - [stats.py](../backend/src/services/fitness/stats.py) — weekly/monthly aggregations:
+    sessions, volume, volume/muscle-group, top-5 exercises, sessions-by-day
+  - [recovery.py](../backend/src/services/fitness/recovery.py) — per-muscle state
+    (`ready / recovering / heavy_fatigue / neglected`) with per-group recovery windows
+  - [targets.py](../backend/src/services/fitness/targets.py) — baseline → current →
+    target progression (`on_track / behind / ahead / achieved / expired`)
+- [analysis_runner.py](../backend/src/services/fitness/analysis_runner.py) —
+  DB ↔ pure-services bridge: full rescan, fresh baselines, upserts everything
+- Repositories (`PersonalRecord`, `ExerciseAnalysis`, `WeeklyStats`, `MonthlyStats`,
+  `TrainingContext`, `ExerciseTarget`)
+- API: `GET /analysis/{prs,plateaus,targets,muscle-status,stats}` +
   `GET /analysis/exercise/{id}/progression`
-- BDD: `pr_detection.feature`, `plateau.feature`
-- 90%+ coverage on `services/fitness`
+- Celery Beat job `nightly_analysis` @ 03:30 UTC, autoretry 2× with backoff,
+  ntfy alert on final failure
+- [training_seed.yaml](../backend/config/training_seed.yaml) — full PHUL V2 Bodyland
+  (24 exercises, baselines + 3-month targets + long-term goals, retired exercises
+  *excluded* per training program policy)
+- Idempotent seed loader: `python -m src.scripts.seed_training`
+- Sprint 1 cleanups: `total_volume_kg` precomputed at workout upsert, workout
+  detail endpoint joins exercise_templates for `title`/`primary_muscle_group`
+- **Hevy field-mapping fix**: Hevy MCP returns `weight` (not `weightKg`) and
+  `name` (not `title`) for exercises — `normalize_workout()` updated, real
+  weights now flowing into DB (~80 workouts with full numeric data)
 
-**Covers:** US-011, US-012, US-013, US-013b, US-014, US-015 · NFR-TEST-001/002, PERF-007/008
+**Coverage** — services/fitness pure modules:
+| Module | Coverage |
+|---|---|
+| pr_detection.py | 98% |
+| plateau.py | 96% |
+| recovery.py | 97% |
+| stats.py | 99% |
+| targets.py | 93% |
+| **Total** | **97%** (CI gate ≥90% — see `.coveragerc-fitness`) |
 
-**Definition of done:** I beat a bench PR → it's detected automatically, and I see
-my plateau alerts + target progress on the dashboard.
+**Real-world validation against the user's Hevy account:**
+- 1 trigger of `nightly_analysis` on 80 real workouts → **352 PRs detected**,
+  **23 plateau findings** (incl. `plateau_stalled` on a now-retired exercise),
+  weekly+monthly stats persisted — full run in **149 ms**
+- `GET /analysis/stats?period=month` → 4 sessions in May 2026, 20644.5kg
+  volume, top muscles: upper_back / lats / quadriceps
+- `GET /analysis/targets` → Bench Press 16% progress (ahead_of_schedule),
+  Lat Pulldown 73%, Pull Up 0%
+- 73 tests passing (41 unit pure fitness + Sprint 0/1 still green)
+
+**Covers:** US-011, US-012, US-013, US-013b, US-014, US-015 · NFR-TEST-001/002
+
+**Sprint 2 TODOs / deferred to Sprint 3+:**
+- BDD `.feature` files for pr_detection & plateau (currently spec-as-test
+  in `test_pr_detection.py` / `test_plateau.py`)
+- "Exercise retired" filter: plateau findings on retired exercises (e.g.
+  "Squat (Barre)") should be suppressed (add a `retired_exercises` field in
+  training_context)
+- `bucket` granularity per exercise (current 5kg uniform — mollets / leg press
+  could use 10kg)
+- Materialised-view `daily_health_summary` refresh (waits for S7 health data)
 
 ---
 
@@ -283,4 +332,4 @@ Each sprint follows the same rhythm:
 
 ---
 
-*Generated May 2026 — Frederick × Claude. Roadmap locked. Sprint 0 ✅ · Sprint 1 ✅ · Next stop: Sprint 2 (Analysis Engine).*
+*Generated May 2026 — Frederick × Claude. Roadmap locked. Sprint 0 ✅ · Sprint 1 ✅ · Sprint 2 ✅ · Next stop: Sprint 3 (LLM Router + Coaching).*

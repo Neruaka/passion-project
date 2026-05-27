@@ -81,6 +81,9 @@ class WorkoutExercise(Base):
     sets: Mapped[list[WorkoutSet]] = relationship(
         back_populates="exercise", cascade="all, delete-orphan"
     )
+    template: Mapped[ExerciseTemplate | None] = relationship(
+        "ExerciseTemplate", lazy="raise", foreign_keys=[exercise_template_id]
+    )
 
     __table_args__ = (Index("idx_workout_exercises_workout", "workout_id", "order_index"),)
 

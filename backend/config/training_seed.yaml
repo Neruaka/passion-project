@@ -1,11 +1,25 @@
-# Training program seed (PPL+Upper+Street). Loaded once at bootstrap to populate
-# training_context, program_split, and exercise_targets. See SPECIFICATIONS.md.
+# PASSION — Training program seed (US-013b, Sprint 2)
+#
+# Source of truth: docs/personal/training-program.md (PHUL V2 Bodyland, May 2026).
+# Loaded into `exercise_targets` + `training_context` + `program_split` by
+# `python -m src.scripts.seed_training`.
+#
+# Notes:
+#   * `hevy_template_id` is resolved at load time by matching `title` against
+#     the synced exercise_templates table (case-insensitive fuzzy).
+#     Leave it null for exercises not yet logged in Hevy.
+#   * Baselines = current starting load (May 2026 PHUL restart at Bodyland).
+#   * Targets = 3-month goals (Aug 2026). 12-month goals under `long_term`.
+#   * Permanently retired exercises (deadlift conventional, RDL, barbell squat)
+#     are NOT here. The agent must never suggest them — see [[training-split]].
 
 training_context:
   phase: cutting
-  phase_started_at: 2026-04-01
-  current_weight_kg: 95
-  daily_kcal_target: 1650
+  phase_started_at: 2026-05-01
+  current_weight_kg: 108
+  current_body_fat_pct: 34
+  target_weight_kg: 100
+  daily_kcal_target: 1800
   daily_protein_g_target_min: 180
   daily_protein_g_target_max: 200
   daily_hydration_l_target: 4
@@ -15,34 +29,255 @@ training_context:
   wakeup_target: "07:00"
   daily_steps_target: 8000
   weekly_long_walks_target: 2
-  weekly_session_target: 5
-  active_split: "PPL+Upper+Street"
+  weekly_session_target: 4
+  active_split: "PHUL"
+  notes: "PHUL V2 Bodyland — restart May 2026, cut to 100kg by Aug 2026."
+  # Exercises permanently retired (lower-back history). The analysis engine
+  # suppresses plateau/regression findings on these so old historical sessions
+  # don't bubble up as actionable. Match is case-insensitive substring on
+  # exercise_title.
+  retired_exercises:
+    - "Deadlift"            # conventional, sumo, etc.
+    - "Romanian Deadlift"
+    - "RDL"
+    - "Squat (Barbell)"
+    - "Squat (Barre)"
+    - "Back Squat"
+    - "Front Squat"
   supplements:
-    - {name: Creatine, dose: 5g, timing: anytime, frequency: daily}
-    - {name: Whey, dose: 30g, timing: post-workout, frequency: training_days}
-    - {name: Collagen, dose: 10g, timing: morning, frequency: daily}
-    - {name: Omega-3, dose: 2g EPA+DHA, timing: with_meal, frequency: daily}
-    - {name: Magnesium bisglycinate, dose: 300mg, timing: evening, frequency: daily}
-    - {name: Vitamin D3, dose: 4000 IU, timing: morning, frequency: daily}
-    - {name: Bioculture, dose: 1 capsule, timing: morning, frequency: daily}
-    - {name: Multivitamin, dose: 1 tablet, timing: morning, frequency: daily}
+    - {name: Creatine, dose: 5g, timing: morning, frequency: daily}
+    - {name: Whey, dose: 30g, timing: morning, frequency: daily}
+    - {name: Casein, dose: 30g, timing: bedtime, frequency: daily}
+    - {name: Collagen+VitC, dose: 15g, timing: morning, frequency: daily}
+    - {name: Omega-3, dose: 6 caps EPA+DHA, timing: with_meals, frequency: daily}
+    - {name: Magnesium bisglycinate, dose: 200mg, timing: evening, frequency: daily}
+    - {name: Vitamin D3, dose: 2000 IU summer / 4000 IU winter, timing: noon, frequency: daily}
+    - {name: Multivitamin, dose: 3 tablets/day, timing: with_meals, frequency: daily}
 
 program_split:
-  split_name: "PPL+Upper+Street"
-  monday: push
-  tuesday: pull
-  wednesday: rest
-  thursday: legs
-  friday: upper
-  saturday: street
+  split_name: "PHUL"
+  monday: upper_power
+  tuesday: lower_power
+  wednesday: upper_hypertrophy
+  thursday: rest
+  friday: lower_hypertrophy
+  saturday: mobility
   sunday: rest
 
-# Exercise targets — abbreviated sample (full list populated at bootstrap).
+# ============================================================
+# EXERCISE TARGETS (PHUL — V2 Bodyland)
+# ============================================================
 exercise_targets:
-  - {title: "Bench Press (Barbell)", day: push, type: compound_free,
-     baseline_weight_kg: 52.5, baseline_reps: 7, target_weight_kg_min: 65, target_weight_kg_max: 70, target_reps: 8}
-  - {title: "Squat (Barbell)", day: legs, type: compound_free,
-     baseline_weight_kg: 65, baseline_reps: 7, target_weight_kg_min: 85, target_reps: 8}
-  - {title: "Rack Pull", day: pull, type: compound_free,
-     baseline_weight_kg: 90, baseline_reps: 6, target_weight_kg_min: 120, target_reps: 6}
-  # ... full program loaded from SPECIFICATIONS.md section 15 at bootstrap.
+
+  # --- UPPER POWER (Monday) — 6-8 reps, RPE 8-9 ---
+
+  - title: "Bench Press (Barbell)"
+    workout_day: monday
+    exercise_type: compound
+    progression_scheme: power
+    baseline: {weight_kg: 50, reps: 6}
+    target:   {weight_kg_min: 65, weight_kg_max: 75, reps_min: 6, reps_max: 6}
+    estimated_weeks: {min: 10, max: 14}
+    long_term: {weight_kg: 100, reps: 1}      # May 2027
+
+  - title: "Shoulder Press (Machine)"
+    workout_day: monday
+    exercise_type: compound
+    progression_scheme: power
+    baseline: {weight_kg: 30, reps: 6}        # 15kg/side HS
+    target:   {weight_kg_min: 45, weight_kg_max: 50, reps_min: 6, reps_max: 6}
+    estimated_weeks: {min: 10, max: 14}
+
+  - title: "Iso-Lateral Row (Machine)"
+    workout_day: monday
+    exercise_type: compound
+    progression_scheme: power
+    baseline: {weight_kg: 30, reps: 6}
+    target:   {weight_kg_min: 50, weight_kg_max: 60, reps_min: 6, reps_max: 6}
+    estimated_weeks: {min: 10, max: 14}
+
+  - title: "Lat Pulldown (Machine)"
+    workout_day: monday
+    exercise_type: compound
+    progression_scheme: power
+    baseline: {weight_kg: 30, reps: 8}
+    target:   {weight_kg_min: 50, weight_kg_max: 60, reps_min: 8, reps_max: 8}
+    estimated_weeks: {min: 10, max: 14}
+
+  - title: "Face Pull"
+    workout_day: monday
+    exercise_type: accessory
+    progression_scheme: hypertrophy
+    baseline: {weight_kg: 20, reps: 15}
+    target:   {weight_kg_min: 30, weight_kg_max: 35, reps_min: 15, reps_max: 15}
+    estimated_weeks: {min: 10, max: 14}
+
+  - title: "Bicep Curl (Barbell)"
+    workout_day: monday
+    exercise_type: isolation
+    progression_scheme: power
+    baseline: {weight_kg: 20, reps: 8}
+    target:   {weight_kg_min: 28, weight_kg_max: 32, reps_min: 8, reps_max: 8}
+    estimated_weeks: {min: 10, max: 14}
+
+  - title: "Triceps Extension (Cable)"
+    workout_day: monday
+    exercise_type: isolation
+    progression_scheme: hypertrophy
+    baseline: {weight_kg: 14, reps: 10}
+    target:   {weight_kg_min: 22, weight_kg_max: 26, reps_min: 10, reps_max: 10}
+    estimated_weeks: {min: 10, max: 14}
+
+  # --- LOWER POWER (Tuesday) — 6-8 reps ---
+
+  - title: "Hack Squat (Panatta)"
+    workout_day: tuesday
+    exercise_type: compound
+    progression_scheme: power
+    baseline: {weight_kg: 40, reps: 6}         # 20kg/side = 40kg plates
+    target:   {weight_kg_min: 95, weight_kg_max: 105, reps_min: 8, reps_max: 8}
+    estimated_weeks: {min: 12, max: 14}
+    long_term: {weight_kg: 160, reps: 8}
+
+  - title: "Rack Pull"
+    workout_day: tuesday
+    exercise_type: compound
+    progression_scheme: power
+    baseline: {weight_kg: 85, reps: 6}
+    target:   {weight_kg_min: 105, weight_kg_max: 115, reps_min: 6, reps_max: 6}
+    estimated_weeks: {min: 10, max: 12}
+    long_term: {weight_kg: 160, reps: 6}
+    notes: "Sangles en 8 pour les séries de travail."
+
+  - title: "Leg Press"
+    workout_day: tuesday
+    exercise_type: compound
+    progression_scheme: power
+    baseline: {weight_kg: 100, reps: 8}
+    target:   {weight_kg_min: 140, weight_kg_max: 160, reps_min: 8, reps_max: 8}
+    estimated_weeks: {min: 10, max: 14}
+
+  - title: "Seated Leg Curl"
+    workout_day: tuesday
+    exercise_type: isolation
+    progression_scheme: power
+    baseline: {weight_kg: 50, reps: 8}
+    target:   {weight_kg_min: 65, weight_kg_max: 75, reps_min: 8, reps_max: 8}
+    estimated_weeks: {min: 10, max: 14}
+
+  - title: "Seated Calf Raise"
+    workout_day: tuesday
+    exercise_type: isolation
+    progression_scheme: hypertrophy
+    baseline: {weight_kg: 55, reps: 15}
+    target:   {weight_kg_min: 75, weight_kg_max: 85, reps_min: 15, reps_max: 15}
+    estimated_weeks: {min: 10, max: 14}
+
+  # --- UPPER HYPERTROPHY (Wednesday) — 12-15 reps ---
+
+  - title: "Incline Bench Press (Machine)"
+    workout_day: wednesday
+    exercise_type: compound
+    progression_scheme: hypertrophy
+    baseline: {weight_kg: 25, reps: 12}
+    target:   {weight_kg_min: 40, weight_kg_max: 50, reps_min: 12, reps_max: 12}
+    estimated_weeks: {min: 10, max: 14}
+
+  - title: "Pec Fly (Machine)"
+    workout_day: wednesday
+    exercise_type: isolation
+    progression_scheme: hypertrophy
+    baseline: {weight_kg: null, reps: 15}
+    target:   {weight_kg_min: null, weight_kg_max: null, reps_min: 15, reps_max: 15}
+    estimated_weeks: {min: 10, max: 14}
+    notes: "À calibrer."
+
+  - title: "Low Row (Machine)"
+    workout_day: wednesday
+    exercise_type: compound
+    progression_scheme: hypertrophy
+    baseline: {weight_kg: 30, reps: 12}
+    target:   {weight_kg_min: 50, weight_kg_max: 60, reps_min: 12, reps_max: 12}
+    estimated_weeks: {min: 10, max: 14}
+
+  - title: "Lat Pulldown - neutral grip (Machine)"
+    workout_day: wednesday
+    exercise_type: compound
+    progression_scheme: hypertrophy
+    baseline: {weight_kg: 25, reps: 12}
+    target:   {weight_kg_min: 40, weight_kg_max: 50, reps_min: 12, reps_max: 12}
+    estimated_weeks: {min: 10, max: 14}
+
+  - title: "Lateral Raise (Cable)"
+    workout_day: wednesday
+    exercise_type: isolation
+    progression_scheme: hypertrophy
+    baseline: {weight_kg: null, reps: 15}
+    target:   {weight_kg_min: null, weight_kg_max: null, reps_min: 15, reps_max: 15}
+    estimated_weeks: {min: 10, max: 14}
+    notes: "À calibrer."
+
+  - title: "Triceps Pushdown (Cable)"
+    workout_day: wednesday
+    exercise_type: isolation
+    progression_scheme: hypertrophy
+    baseline: {weight_kg: 18, reps: 15}
+    target:   {weight_kg_min: 28, weight_kg_max: 32, reps_min: 15, reps_max: 15}
+    estimated_weeks: {min: 10, max: 14}
+
+  - title: "Bicep Curl (Cable)"
+    workout_day: wednesday
+    exercise_type: isolation
+    progression_scheme: hypertrophy
+    baseline: {weight_kg: 18, reps: 15}
+    target:   {weight_kg_min: 28, weight_kg_max: 32, reps_min: 15, reps_max: 15}
+    estimated_weeks: {min: 10, max: 14}
+
+  # --- LOWER HYPERTROPHY (Friday) — 12-20 reps ---
+
+  - title: "Leg Press (volume)"
+    workout_day: friday
+    exercise_type: compound
+    progression_scheme: hypertrophy
+    baseline: {weight_kg: 80, reps: 15}
+    target:   {weight_kg_min: 120, weight_kg_max: 140, reps_min: 15, reps_max: 15}
+    estimated_weeks: {min: 10, max: 14}
+    notes: "Même machine que mardi mais plus léger + plus de reps."
+
+  - title: "Leg Extension"
+    workout_day: friday
+    exercise_type: isolation
+    progression_scheme: hypertrophy
+    baseline: {weight_kg: 34, reps: 15}
+    target:   {weight_kg_min: 55, weight_kg_max: 65, reps_min: 15, reps_max: 15}
+    estimated_weeks: {min: 10, max: 14}
+
+  - title: "Lying Leg Curl"
+    workout_day: friday
+    exercise_type: isolation
+    progression_scheme: hypertrophy
+    baseline: {weight_kg: 40, reps: 15}
+    target:   {weight_kg_min: 60, weight_kg_max: 70, reps_min: 15, reps_max: 15}
+    estimated_weeks: {min: 10, max: 14}
+
+  - title: "Walking Lunge (Dumbbell)"
+    workout_day: friday
+    exercise_type: compound
+    progression_scheme: hypertrophy
+    baseline: {weight_kg: 20, reps: 10}        # 10kg/dumbbell total per side
+    target:   {weight_kg_min: 30, weight_kg_max: 40, reps_min: 10, reps_max: 10}
+    estimated_weeks: {min: 10, max: 14}
+    notes: "Reps par jambe."
+
+  # --- BODYWEIGHT MILESTONE ---
+
+  - title: "Pull Up"
+    workout_day: saturday
+    exercise_type: bodyweight
+    progression_scheme: skill
+    bodyweight_dependent: true
+    baseline: {weight_kg: 0, reps: 0}
+    target:   {weight_kg: 0, reps: 1}
+    estimated_weeks: {min: 8, max: 12}
+    long_term: {weight_kg: 0, reps: 8}
+    notes: "Negatives + bands progression rouge → noire → BW."

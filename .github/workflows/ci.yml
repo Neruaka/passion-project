@@ -45,6 +45,9 @@ jobs:
       - name: Tests (unit + integration via testcontainers)
         working-directory: backend
         run: pytest
+      - name: Coverage gate — services/fitness pure modules (>= 90%, NFR-TEST-002)
+        working-directory: backend
+        run: pytest tests/unit/services/fitness --cov --cov-config=.coveragerc-fitness --cov-fail-under=90 -q
 
   frontend:
     runs-on: ubuntu-latest

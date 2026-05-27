@@ -2,7 +2,7 @@
 
 > An autonomous AI agent running 24/7 on a self-hosted Linux server, designed as a comprehensive life-management system covering fitness, health, finance, career, journaling, and more.
 
-[![Status](https://img.shields.io/badge/sprint%200--1-done-brightgreen)]()
+[![Status](https://img.shields.io/badge/sprint%200--2-done-brightgreen)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 [![Python](https://img.shields.io/badge/python-3.12+-blue)]()
 [![Next.js](https://img.shields.io/badge/next.js-15-black)]()
@@ -197,9 +197,9 @@ The project moved from specifications-first to **active implementation** in May 
 | Sprint | Status | What works today |
 |---|---|---|
 | **S0 — Walking skeleton** | ✅ Done | 10 containers up · bcrypt+JWT auth · `/health` · Grafana sees the API · CI green |
-| **S1 — Hevy ingestion** | ✅ Done | MCP-based sync (every 30 min via Celery Beat) · UPSERT idempotent · `GET /workouts`, `GET /workouts/{id}`, `POST /workouts/sync` · 80 real workouts + 434 templates synced from my own account |
-| **S2 — Analysis engine** | 🔜 Next | PR detection (Epley), plateaus, weekly/monthly stats, materialized views |
-| **S3 — LLM Router + Coaching** | ⏳ | 3-tier routing, budget cap, workout suggestions |
+| **S1 — Hevy ingestion** | ✅ Done | MCP-based sync (every 30 min via Celery Beat) · UPSERT idempotent · `GET /workouts` API · **80 real workouts + 434 templates synced from my account** |
+| **S2 — Analysis engine** | ✅ Done | PR detection (4 types, Epley), plateaus (context-aware cut/bulk), weekly/monthly stats, recovery state, target progression · Nightly Celery job @ 03:30 UTC · 6 `/analysis/*` endpoints · **352 PRs + 23 plateau findings on real data in 149ms** · 97% coverage on pure logic (gate ≥90%) |
+| **S3 — LLM Router + Coaching** | 🔜 Next | 3-tier routing, budget cap, workout suggestions |
 | **S4 — Brain Orchestrator** | ⏳ | LangGraph autonomous loop, memory (RAG) |
 | **S5 — Dashboard UI** | ⏳ | Next.js dashboard, FR i18n, charts |
 | **S6 — Chat + Notifications** | ⏳ | WebSocket streaming, ntfy + Resend |
@@ -236,6 +236,27 @@ Numbers as of early 2026:
 James also built a series of mini-games to train himself ([TypeMaster AI](https://typing-game-kappa-seven.vercel.app/), [Red Team Arena](https://red-team-arena.vercel.app/), [Prompt Craft](https://prompt-craft-jet.vercel.app/), and many others) — a brilliant meta-touch that shows the depth of the system.
 
 This project is a **smaller, more focused, France-adapted spiritual successor**. Different person, different life, different stack — but the same conviction that a personal AI system, built with care, can be one of the most leveraged tools in your life.
+
+---
+
+## 🔧 Troubleshooting
+
+### Windows / PowerShell: French accents come back as mojibake (`Ã®`, `é`, …)
+
+PowerShell on Windows defaults to Windows-1252 for console I/O, so UTF-8 JSON
+from the FastAPI gets decoded wrong when displayed via `ConvertTo-Json` or piped
+through `python -c`. Dot-source the dev helpers to fix it for the session AND
+get convenient API wrappers:
+
+```powershell
+. .\infra\scripts\dev-helpers.ps1
+passion-login                 # caches the JWT in $Global:PASSION_TOKEN
+passion-workouts              # GET /api/v1/workouts?page_size=5
+passion-prs                   # GET /api/v1/analysis/prs?page_size=10
+passion-stats month           # GET /api/v1/analysis/stats?period=month
+```
+
+To make it permanent, add the dot-source line to your `$PROFILE`.
 
 ---
 

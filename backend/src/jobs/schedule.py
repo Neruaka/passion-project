@@ -17,9 +17,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from celery.schedules import crontab
+
 beat_schedule: dict[str, dict[str, Any]] = {
     "sync-hevy-every-30-min": {
         "task": "sync_hevy_workouts",
         "schedule": 30 * 60,  # seconds — 30 min (US-008)
+    },
+    "nightly-analysis-0330": {
+        "task": "nightly_analysis",
+        "schedule": crontab(hour=3, minute=30),  # 03:30 UTC daily (S2)
     },
 }

@@ -50,6 +50,7 @@ class TrainingContext(Base):
     weekly_session_target: Mapped[int | None] = mapped_column(Integer)
     active_split: Mapped[str | None] = mapped_column(String(50))
     supplements: Mapped[dict | None] = mapped_column(JSONB)
+    retired_exercises: Mapped[list[str]] = mapped_column(JSONB, nullable=False, server_default="[]")
     notes: Mapped[str | None] = mapped_column(Text)
     updated_at: Mapped[datetime] = updated_at_col()
 

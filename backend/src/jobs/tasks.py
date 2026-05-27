@@ -89,3 +89,43 @@ def sync_hevy_workouts(self: Any) -> dict[str, Any]:
         raise
     log.info("sync_hevy_done", **result)
     return result
+
+
+async def _do_nightly_analysis() -> dict[str, Any]:
+    from src.services.fitness.analysis_runner import run_nightly_analysis
+
+    async with _session_scope() as session:
+        stats = await run_nightly_analysis(session)
+        return stats.as_dict()
+
+
+@app.task(  # type: ignore[untyped-decorator]
+    name="nightly_analysis",
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_backoff=120,
+    retry_backoff_max=900,
+    retry_jitter=True,
+    max_retries=2,
+)
+def nightly_analysis(self: Any) -> dict[str, Any]:
+    """Nightly (03:30 UTC): rescan all sets → PRs + plateau findings + stats."""
+    log = logger.bind(task="nightly_analysis", retries=self.request.retries)
+    try:
+        result = asyncio.run(_do_nightly_analysis())
+    except Exception as e:
+        log.exception("nightly_analysis_failed", error=str(e))
+        if self.request.retries >= (self.max_retries or 0):
+            settings = get_settings()
+            asyncio.run(
+                notify(
+                    settings.ntfy_topic,
+                    f"PASSION nightly analysis FAILED after retries: {e!s}",
+                    title="PASSION — Nightly analysis down",
+                    priority="high",
+                    tags=["warning", "analysis"],
+                )
+            )
+        raise
+    log.info("nightly_analysis_done", **result)
+    return result

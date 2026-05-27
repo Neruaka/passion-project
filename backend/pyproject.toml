@@ -92,11 +92,27 @@ asyncio_mode = "auto"
 addopts = "--cov=src --cov-report=term-missing"
 
 [tool.coverage.report]
-# Sprint 0 has many sprint-N stubs that aren't yet implemented; raise this
-# threshold sprint by sprint as the corresponding modules are filled in.
+# Global threshold stays at 0 (lots of sprint-N stubs); per-domain coverage
+# is enforced separately in CI for the pure fitness services (90% — S2).
 fail_under = 0
 exclude_also = [
     "raise NotImplementedError",
     "if TYPE_CHECKING:",
     "if __name__ == .__main__.:",
+]
+
+[tool.coverage.run]
+omit = [
+    # I/O glue with DB / Celery / MCP — covered by integration tests in
+    # tests/integration/, not by pure unit tests. Wildcards required because
+    # coverage resolves to absolute paths.
+    "*/services/fitness/analysis_runner.py",
+    "*/services/fitness/sync.py",
+    "*/scripts/*",
+    "*/jobs/tasks.py",
+    "*/celery_app.py",
+    "*/main.py",
+    "*/db/session.py",
+    "*/core/observability.py",
+    "*/core/logging.py",
 ]

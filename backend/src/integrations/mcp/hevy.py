@@ -91,10 +91,15 @@ def _parse_dt(value: str | None) -> datetime | None:
 def normalize_workout(raw: dict[str, Any]) -> HevyWorkoutDTO:
     """Convert a raw Hevy workout payload into the internal DTO.
 
-    Hevy schema (camelCase keys, ISO-8601 dates with trailing Z): id, title,
-    description, startTime, endTime, createdAt, updatedAt, exercises[{title,
-    exerciseTemplateId, notes, supersetId, sets[{weightKg, reps, rpe, type,
-    distanceMeters, durationSeconds}]}].
+    Confirmed Hevy MCP shape (camelCase, ISO-8601 dates):
+      workout: { id, title, description, startTime, endTime, createdAt, updatedAt,
+                 duration (string), exercises: [...] }
+      exercise: { name, index, notes, exerciseTemplateId, supersetId, sets: [...] }
+      set: { index, type, weight, reps, rpe, distance, duration, customMetric }
+
+    Hevy uses `weight` (kg, no unit suffix in field name) and `name` (not `title`)
+    for exercises. We still accept snake_case + the older `weightKg`/`title`
+    spellings as a safety net.
     """
     exercises: list[HevyExerciseDTO] = []
     for idx, ex in enumerate(raw.get("exercises") or []):
@@ -102,18 +107,22 @@ def normalize_workout(raw: dict[str, Any]) -> HevyWorkoutDTO:
         for s_idx, s in enumerate(ex.get("sets") or []):
             sets.append(
                 {
-                    "order_index": s_idx,
+                    "order_index": s.get("index", s_idx),
                     "set_type": s.get("type") or "normal",
-                    "weight_kg": s.get("weightKg") or s.get("weight_kg"),
+                    "weight_kg": s.get("weight") or s.get("weightKg") or s.get("weight_kg"),
                     "reps": s.get("reps"),
                     "rpe": s.get("rpe"),
-                    "distance_meters": s.get("distanceMeters") or s.get("distance_meters"),
-                    "duration_seconds": s.get("durationSeconds") or s.get("duration_seconds"),
+                    "distance_meters": s.get("distance")
+                    or s.get("distanceMeters")
+                    or s.get("distance_meters"),
+                    "duration_seconds": s.get("duration")
+                    or s.get("durationSeconds")
+                    or s.get("duration_seconds"),
                 }
             )
         exercises.append(
             HevyExerciseDTO(
-                title=ex.get("title"),
+                title=ex.get("name") or ex.get("title"),
                 exercise_template_id=ex.get("exerciseTemplateId") or ex.get("exercise_template_id"),
                 order_index=ex.get("index", idx),
                 notes=ex.get("notes"),

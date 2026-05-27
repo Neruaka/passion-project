@@ -31,3 +31,6 @@ Thumbs.db
 # Logs & data
 *.log
 backups/
+
+# Personal / sensitive (training program, medical, etc.)
+docs/personal/
